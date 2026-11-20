@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TXT 章节裁剪助手（纯离线版）</title>
+  <style>
+    :root {
+      --bg-page: #f5f5f2;
+      --bg-card: #ffffff;
+      --bg-soft: #f5f5f4;
+      --bg-soft-hover: #e7e5e4;
+      --border: #e7e5e4;
+      --border-strong: #d6d3d1;
+      --ink-main: #1c1917;
+      --ink-sub: #57534e;
+      --ink-muted: #78716c;
+      --accent: #0f766e;
+      --accent-hover: #115e59;
+      --accent-soft: #f0fdfa;
+      --accent-soft-2: #ccfbf1;
+      --accent-border: #99f6e4;
+      --accent-ink: #115e59;
+      --amber-bg: #fffbeb;
+      --amber-ink: #b45309;
+      --sky-bg: #f0f9ff;
+      --sky-ink: #0369a1;
+      --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+      --shadow-lg: 0 12px 32px rgba(28, 25, 23, 0.14);
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-2xl: 20px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--ink-main);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    /* App Shell */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #appShell {
+      width: 100%;
+      max-width: 560px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-page);
+      position: relative;
+    }
+
+    @media (min-width: 640px) {
+      #appShell {
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        box-shadow: 0 20px 40px rgba(28, 25, 23, 0.08);
+      }
+    }
+
+    /* Header */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink-main);
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-sub {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-header {
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.12s ease, background-color 0.15s ease;
+    }
+
+    .btn-header:active {
+      transform: scale(0.95);
+    }
+
+    .btn-header-neutral {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      color: #44403c;
+    }
+
+    .btn-header-neutral:hover {
+      background: var(--bg-soft-hover);
+    }
+
+    .btn-header-accent {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-ink);
+    }
+
+    /* Main */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 16px 108px;
+    }
+
+    /* Import View */
+    .import-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+      padding: 12px 0;
+    }
+
+    .drop-zone {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius-2xl);
+      padding: 28px 22px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .drop-zone:active {
+      transform: scale(0.99);
+    }
+
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 14px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink-main);
+    }
+
+    .drop-desc {
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: var(--ink-muted);
+      line-height: 1.65;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+      transition: background-color 0.15s ease, transform 0.12s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      background: #d6d3d1;
+      color: #fff;
+    }
+
+    .demo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .demo-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-main);
+    }
+
+    .demo-sub {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .btn-soft {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: var(--bg-soft);
+      color: var(--ink-main);
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      transition: background-color 0.15s ease, transform 0.12s ease;
+    }
+
+    .btn-soft:hover {
+      background: var(--bg-soft-hover);
+    }
+
+    .btn-soft:active {
+      transform: scale(0.95);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 8px;
+    }
+
+    .feature-icon {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 6px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-icon.amber { background: var(--amber-bg); color: var(--amber-ink); }
+    .feature-icon.teal { background: var(--accent-soft); color: var(--accent); }
+    .feature-icon.sky { background: var(--sky-bg); color: var(--sky-ink); }
+
+    .feature-name {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-main);
+    }
+
+    .feature-sub {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    /* Workspace View */
+    .workspace-view {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-rule {
+      border-color: var(--accent-border);
+    }
+
+    .file-summary-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .file-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .file-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .file-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-meta {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .select-input {
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      font-size: 12px;
+      font-weight: 500;
+      color: #44403c;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .select-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Rule Panel */
+    .rule-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .rule-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rule-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .rule-preset-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink-sub);
+      transition: all 0.15s ease;
+    }
+
+    .rule-preset-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      margin-bottom: 6px;
+    }
+
+    .inline-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .text-input {
+      flex: 1;
+      min-width: 0;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      font-size: 12px;
+      color: var(--ink-main);
+      outline: none;
+    }
+
+    .text-input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .btn-small-primary {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .btn-small-primary:active {
+      transform: scale(0.95);
+    }
+
+    /* Toolbar */
+    .toolbar-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #a8a29e;
+      pointer-events: none;
+      display: flex;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 36px 0 34px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: #f2f1ee;
+      font-size: 14px;
+      color: var(--ink-main);
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #d6d3d1;
+      color: #44403c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .range-label {
+      font-size: 12px;
+      color: var(--ink-muted);
+      flex-shrink: 0;
+    }
+
+    .range-input {
+      width: 66px;
+      height: 36px;
+      padding: 0 6px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      font-size: 12px;
+      text-align: center;
+      color: var(--ink-main);
+      outline: none;
+    }
+
+    .range-input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .btn-range {
+      flex: 1;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 9px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-ink);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-range:active {
+      transform: scale(0.96);
+    }
+
+    .batch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .batch-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-chip {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: var(--bg-soft);
+      color: #44403c;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.12s ease;
+    }
+
+    .btn-chip:hover {
+      background: var(--bg-soft-hover);
+    }
+
+    .btn-chip:active {
+      transform: scale(0.95);
+    }
+
+    .btn-filter {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink-sub);
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-filter.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    /* List Header & Items */
+    .list-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      font-size: 12px;
+    }
+
+    .list-count {
+      color: var(--ink-muted);
+      font-weight: 500;
+    }
+
+    .selected-hint {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .chapter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chapter-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 15px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .chapter-item:hover {
+      border-color: var(--border-strong);
+    }
+
+    .chapter-item.selected {
+      background: var(--accent-soft);
+      border-color: #14b8a6;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .checkbox-box {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      border: 2px solid var(--border-strong);
+      background: #fff;
+      color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .chapter-item.selected .checkbox-box {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .chapter-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chapter-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chapter-item.selected .chapter-title {
+      color: #042f2e;
+    }
+
+    .chapter-sub {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .preview-btn {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--ink-sub);
+      font-size: 12px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .preview-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent-border);
+    }
+
+    .btn-load-more {
+      width: 100%;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: #44403c;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .empty-state {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px 16px;
+      text-align: center;
+    }
+
+    .empty-state p {
+      margin: 0;
+    }
+
+    /* Sticky Bottom Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 560px;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+      box-shadow: 0 -4px 16px rgba(28, 25, 23, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .bottom-info {
+      min-width: 0;
+    }
+
+    .bottom-count {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-main);
+    }
+
+    .bottom-words {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-export-trigger {
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-export-trigger:disabled {
+      background: #d6d3d1;
+    }
+
+    /* Modals / Bottom Sheets */
+    .modal-root {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+      .modal-root {
+        align-items: center;
+        padding: 16px;
+      }
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 25, 23, 0.5);
+    }
+
+    .modal-panel {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      max-height: 86vh;
+      background: #fff;
+      border-radius: 22px 22px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    @media (min-width: 640px) {
+      .modal-panel {
+        border-radius: 18px;
+      }
+    }
+
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .modal-sub {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .btn-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--ink-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .preview-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      font-size: 15px;
+      line-height: 1.85;
+      color: #292524;
+      white-space: pre-wrap;
+      background: #fafaf8;
+      word-break: break-word;
+    }
+
+    .modal-footer {
+      padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn-outline {
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      color: #44403c;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-outline:disabled {
+      opacity: 0.4;
+    }
+
+    .btn-preview-select {
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-preview-select.is-selected {
+      background: #292524;
+    }
+
+    /* Export Sheet Form */
+    .export-body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .filename-group {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .filename-input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--border-strong);
+      border-right: none;
+      border-radius: 11px 0 0 11px;
+      font-size: 14px;
+      color: var(--ink-main);
+      outline: none;
+    }
+
+    .filename-input:focus {
+      border-color: var(--accent);
+    }
+
+    .filename-ext {
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 0 11px 11px 0;
+      background: var(--bg-soft);
+      color: var(--ink-muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+    }
+
+    .sep-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .sep-btn {
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink-sub);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .sep-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    .option-box {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .option-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-main);
+    }
+
+    .option-desc {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .option-divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    .option-check {
+      width: 19px;
+      height: 19px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translate(-50%, -8px);
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .toast-inner {
+      padding: 9px 16px;
+      border-radius: 999px;
+      background: rgba(28, 25, 23, 0.92);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      white-space: nowrap;
+    }
+
+    svg.icon {
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="appShell">
+    <!-- Sticky Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">TXT 章节裁剪</h1>
+          <p id="headerSubtitle" class="brand-sub">100% 纯离线 · 手机电脑通用 · 不上传文件</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnHeaderRule" type="button" class="hidden btn-header btn-header-neutral">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
+          <span>规则</span>
+        </button>
+        <button id="btnHeaderReimport" type="button" class="hidden btn-header btn-header-accent">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+          <span>换文件</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hidden File Input -->
+    <input id="fileInput" type="file" accept=".txt,text/plain" class="hidden" />
+
+    <!-- Main Content -->
+    <main class="app-main">
+
+      <!-- VIEW 1: Empty / Import Screen -->
+      <section id="importView" class="import-view">
+        <div id="dropZone" class="drop-zone">
+          <div class="drop-icon" aria-hidden="true">
+            <svg class="icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <h2 class="drop-title">导入本地 TXT 文件</h2>
+          <p class="drop-desc">
+            自动识别 UTF-8 / GBK 编码与目录章节<br />
+            手机点击选择，电脑支持直接拖拽到此区域
+          </p>
+          <button id="btnPickFile" type="button" class="btn-primary">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>选择本地 TXT 文件</span>
+          </button>
+        </div>
+
+        <div class="demo-card">
+          <div>
+            <p class="demo-title">先试试效果？</p>
+            <p class="demo-sub">加载内置示例小说（含序章与 12 个章节）</p>
+          </div>
+          <button id="btnLoadDemo" type="button" class="btn-soft">
+            <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            <span>加载示例</span>
+          </button>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon amber" aria-hidden="true">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </div>
+            <p class="feature-name">智能目录</p>
+            <p class="feature-sub">支持自定义正则</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon teal" aria-hidden="true">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <p class="feature-name">自由裁剪</p>
+            <p class="feature-sub">单章/区间多选</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon sky" aria-hidden="true">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <p class="feature-name">零网络依赖</p>
+            <p class="feature-sub">断网也能正常用</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: Workspace / Chapter Selection Screen -->
+      <section id="workspaceView" class="hidden workspace-view">
+
+        <!-- File Summary Card -->
+        <div class="card">
+          <div class="file-summary-row">
+            <div class="file-info">
+              <div class="file-title-row">
+                <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <h2 id="fileNameDisplay" class="file-title">文件名.txt</h2>
+              </div>
+              <p id="fileMetaDisplay" class="file-meta">共 0 章 · 0 字 · UTF-8</p>
+            </div>
+            <select id="encodingSelect" aria-label="文件编码" class="select-input">
+              <option value="auto">编码: 自动</option>
+              <option value="utf-8">UTF-8</option>
+              <option value="gb18030">GBK/GB18030</option>
+              <option value="big5">Big5</option>
+              <option value="utf-16le">UTF-16LE</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Collapsible Rule Panel -->
+        <div id="rulePanel" class="hidden card card-rule">
+          <div class="rule-header">
+            <span class="rule-title">目录识别规则</span>
+            <button id="btnCloseRule" type="button" style="font-size:12px;color:#78716c;padding:2px 6px;">收起</button>
+          </div>
+          <div class="rule-presets" id="rulePresets">
+            <button type="button" data-preset="smart" class="rule-preset-btn">智能通用</button>
+            <button type="button" data-preset="chinese" class="rule-preset-btn">第X章/回/节</button>
+            <button type="button" data-preset="numeric" class="rule-preset-btn">纯数字编号</button>
+            <button type="button" data-preset="english" class="rule-preset-btn">Chapter X</button>
+            <button type="button" data-preset="fixed" class="rule-preset-btn">按字数分段</button>
+          </div>
+          <div id="customRegexBox">
+            <label for="regexInput" class="field-label">自定义行首正则（匹配即视为新章节）</label>
+            <div class="inline-form">
+              <input id="regexInput" type="text" class="text-input mono" />
+              <button id="btnApplyRule" type="button" class="btn-small-primary">重新识别</button>
+            </div>
+          </div>
+          <div id="fixedChunkBox" class="hidden">
+            <label for="chunkSizeInput" class="field-label">每段字数（适合无明确章节标题的 TXT）</label>
+            <div class="inline-form">
+              <input id="chunkSizeInput" type="number" min="500" max="100000" step="500" value="5000" class="text-input" />
+              <button id="btnApplyChunk" type="button" class="btn-small-primary">分段</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Selection & Range Toolbar -->
+        <div class="card toolbar-stack">
+          <div class="search-wrap">
+            <span class="search-icon" aria-hidden="true">
+              <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input id="searchInput" type="text" placeholder="搜索章节标题或序号..." class="search-input" />
+            <button id="btnClearSearch" type="button" aria-label="清除搜索" class="hidden search-clear">
+              <svg class="icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="range-row">
+            <span class="range-label">区间:</span>
+            <input id="rangeStart" type="number" min="1" placeholder="起始" class="range-input" />
+            <span class="range-label">至</span>
+            <input id="rangeEnd" type="number" min="1" placeholder="结束" class="range-input" />
+            <button id="btnSelectRange" type="button" class="btn-range">选中区间</button>
+          </div>
+
+          <div class="batch-row">
+            <div class="batch-group">
+              <button id="btnSelectAll" type="button" class="btn-chip">全选</button>
+              <button id="btnInvertSelect" type="button" class="btn-chip">反选</button>
+              <button id="btnClearSelect" type="button" class="btn-chip">清空</button>
+            </div>
+            <button id="btnFilterSelected" type="button" class="btn-filter">
+              <svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>仅看已选</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chapter List Info -->
+        <div class="list-meta-bar">
+          <span id="listCountLabel" class="list-count">目录列表</span>
+          <span id="selectedHintLabel" class="selected-hint">已选 0 章</span>
+        </div>
+
+        <!-- Chapter List Container -->
+        <div id="chapterList" class="chapter-list"></div>
+
+        <!-- Load More Button -->
+        <div id="loadMoreWrap" class="hidden">
+          <button id="btnLoadMore" type="button" class="btn-load-more">加载更多章节</button>
+        </div>
+
+        <!-- Empty Search Result -->
+        <div id="emptyListState" class="hidden empty-state">
+          <p style="font-size:14px;font-weight:600;color:#57534e;">没有匹配的章节</p>
+          <p style="font-size:12px;color:#a8a29e;margin-top:4px;">试试修改搜索词，或点击右上角「规则」调整目录识别方式</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Sticky Bottom Action Bar -->
+    <footer id="bottomBar" class="hidden bottom-bar">
+      <div class="bottom-info">
+        <p id="bottomSelectedCount" class="bottom-count">已选 0 章</p>
+        <p id="bottomWordCount" class="bottom-words">预计导出 0 字</p>
+      </div>
+      <button id="btnOpenExport" type="button" disabled class="btn-export-trigger">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>裁剪导出</span>
+      </button>
+    </footer>
+
+    <!-- Modal 1: Chapter Preview -->
+    <div id="previewModal" class="hidden modal-root">
+      <div id="previewBackdrop" class="modal-backdrop"></div>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div style="min-width:0;flex:1;">
+            <h3 id="previewTitle" class="modal-title">章节预览</h3>
+            <p id="previewMeta" class="modal-sub">0 字</p>
+          </div>
+          <button id="btnClosePreview" type="button" aria-label="关闭预览" class="btn-close">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div id="previewBody" class="preview-body"></div>
+        <div class="modal-footer">
+          <div style="display:flex;gap:6px;">
+            <button id="btnPrevChapter" type="button" class="btn-outline">上一章</button>
+            <button id="btnNextChapter" type="button" class="btn-outline">下一章</button>
+          </div>
+          <button id="btnTogglePreviewSelect" type="button" class="btn-preview-select">
+            <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="previewSelectLabel">选中本章</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: Export Settings -->
+    <div id="exportModal" class="hidden modal-root">
+      <div id="exportBackdrop" class="modal-backdrop"></div>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">导出裁剪结果</h3>
+            <p id="exportSummaryText" class="modal-sub">已选 0 章 · 0 字</p>
+          </div>
+          <button id="btnCloseExport" type="button" aria-label="关闭导出窗口" class="btn-close">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="export-body">
+          <div>
+            <label for="exportFileName" class="field-label" style="font-size:12px;color:#44403c;">导出文件名</label>
+            <div class="filename-group">
+              <input id="exportFileName" type="text" class="filename-input" />
+              <span class="filename-ext mono">.txt</span>
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label" style="font-size:12px;color:#44403c;">章节间分隔方式</span>
+            <div class="sep-grid">
+              <button type="button" data-sep="blank" class="sep-btn">空两行</button>
+              <button type="button" data-sep="line" class="sep-btn">分隔线</button>
+              <button type="button" data-sep="compact" class="sep-btn">紧凑换行</button>
+            </div>
+          </div>
+
+          <div class="option-box">
+            <label class="option-row">
+              <div>
+                <p class="option-title">文件开头附加目录清单</p>
+                <p class="option-desc">列出本次裁剪包含的所有章节标题</p>
+              </div>
+              <input id="optIncludeToc" type="checkbox" class="option-check" />
+            </label>
+            <div class="option-divider"></div>
+            <label class="option-row">
+              <div>
+                <p class="option-title">添加 UTF-8 BOM 头</p>
+                <p class="option-desc">兼容老旧手机阅读器或 Windows 记事本</p>
+              </div>
+              <input id="optUtf8Bom" type="checkbox" checked class="option-check" />
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnCopyText" type="button" class="btn-outline" style="height:46px;padding:0 16px;font-size:13px;">
+            <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>复制文本</span>
+          </button>
+          <button id="btnConfirmExport" type="button" class="btn-primary" style="flex:1;">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>下载 TXT 文件</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+      <div id="toastInner" class="toast-inner"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Presets & Demo Data =====
+    const RULE_PRESETS = {
+      smart: {
+        label: '智能通用',
+        regex: '^(?:[\\s　]*)(?:第[\\s零一二三四五六七八九十百千万两0-9]+[章回节卷集部篇话]|(?:序章|楔子|前言|引子|尾声|终章|后记|番外)|Chapter\\s+\\d+|CHAPTER\\s+\\d+|【第[^】]{1,12}章】)[^\\r\\n]{0,60}$'
+      },
+      chinese: {
+        label: '第X章/回/节',
+        regex: '^[\\s　]*第[\\s零一二三四五六七八九十百千万两0-9]+[章回节卷集部篇话][^\\r\\n]{0,60}$'
+      },
+      numeric: {
+        label: '纯数字编号',
+        regex: '^[\\s　]*(?:\\d{1,5}[\\.、\\s　]+[^\\r\\n]{1,50}|[（(【\\[]\\d{1,5}[）)】\\]][^\\r\\n]{0,50})$'
+      },
+      english: {
+        label: 'Chapter X',
+        regex: '^[\\s　]*(?:Chapter|CHAPTER|Part|PART|Prologue|Epilogue)\\b[^\\r\\n]{0,60}$'
+      },
+      fixed: {
+        label: '按字数分段',
+        regex: ''
+      }
+    };
+
+    const DEMO_TEXT = `楔子 雾起青岚
+
+秋雨连绵了三日，青岚山脚的石阶早已湿滑难行。山腰的旧茶棚里，灯笼在风中微微摇晃，映出桌上那柄包着粗布的长剑。
+茶博士打了个哈欠，朝门口望去，只见一个披着蓑衣的少年踏着雨雾而来，斗笠檐下滴落的水珠在青砖上砸出细碎的声响。
+“客官，山路夜黑，不如喝碗姜茶再走？”
+少年抬起头，眼神清亮如秋水，轻轻放下一枚铜钱：“借一盏灯，今夜我要上山。”
+
+第一章 听风阁来客
+
+次日清晨，雨势渐歇，山岚如白练般缠绕在松柏之间。
+听风阁位于青岚山半山腰，素来以搜集江湖秘闻闻名。阁主沈知行正倚在栏杆旁翻阅新到的密信，忽听楼下传来清脆的铜铃声。
+守门弟子快步上楼禀报：“阁主，山下来了一位姓林的少年，说带着十年前沧州旧案的信物，求见阁主一面。”
+沈知行手指一顿，合上信笺，眼中闪过一丝讶异：“沧州旧案？请他到松涛轩奉茶。”
+
+第二章 半块青玉
+
+松涛轩内沉香袅袅。林砚解开怀中的油纸包，将半块裂纹清晰的青玉放在红木桌上。
+玉佩边缘雕刻着细密的云雷纹，背面隐约可见一个残缺的“宁”字。
+沈知行戴上老花镜端详片刻，缓缓道：“这块玉，当年确实出自宁家铁骑。只是十年前大火之后，外头都传宁家已无后人，你从何处得来？”
+“家师临终前交予我的。”林砚平静答道，“他让我来听风阁查一件事——当年在沧州渡口截杀商队的，究竟是哪一路人马。”
+
+第三章 暗巷密语
+
+傍晚时分，青岚镇的夜市刚亮起灯火。
+林砚从听风阁出来，手里多了一份封着火漆的名单。他刚拐进青石板铺就的西巷，便察觉到屋檐上有极轻的瓦片摩擦声。
+他不动声色地加快脚步，在巷口转角处猛然回身，粗布包裹的长剑横在胸前。
+阴影中走出一名灰衣人，低声笑道：“小兄弟别紧张，沈阁主给你的东西太烫手，我家主子愿出五百两银子买下它。”
+
+第四章 雨夜渡口
+
+拒绝了灰衣人的交易后，林砚连夜赶往三十里外的白鹭渡口。
+夜色深沉，江面上漂浮着一层薄雾。渡口旁的老渡船还亮着一盏孤灯，船老大正在舱里抽旱烟。
+林砚踏上跳板，将一枚银角子递过去：“劳烦老丈，今夜送我去对岸的赤壁驿。”
+船老大眯起眼打量了他一番，咧嘴一笑：“今夜风急浪大，寻常人可不敢渡江。小伙子，你背后跟着的尾巴，要不要一并捎上？”
+
+第五章 江心截击
+
+渡船行至江心，四周雾气浓得化不开。
+忽然，左右两侧各驶来一艘快艇，船头站着四名手持短弩的黑衣人，箭簇在微弱的灯火下泛着冷光。
+船老大稳稳握住船舵，竟丝毫不慌：“抓稳了，老汉这艘破船，好久没活动筋骨了！”
+林砚拔剑出鞘，清越的剑鸣划破江雾。他足尖轻点船舷，迎着破空而来的箭矢纵身跃起，剑光如雪，在半空中卷起一道银弧。
+
+第六章 赤壁驿旧账
+
+天色微明时，渡船终于靠岸。林砚肩头受了点轻伤，简单包扎后直奔赤壁驿的旧粮仓。
+按照听风阁给出的线索，当年沧州商队失踪前，最后一笔货物的入库单就藏在驿丞的旧账房里。
+推开尘封已久的木门，灰尘在晨光中飞舞。林砚在最底层的木箱里翻出一本泛黄的《戊辰年漕运册》，其中夹着半张被烧焦的印信。
+
+第七章 印信玄机
+
+那半张印信上的朱砂早已暗沉，却仍能辨认出是一枚官府盐运司的私章。
+林砚眉头紧锁：若只是寻常绿林劫匪，绝不可能动用盐运司的通关文牒。这意味着十年前的沧州旧案背后，牵扯着朝堂与江湖的双重势力。
+就在此时，门外传来一阵整齐的马蹄声，一名身着青衫的女子翻身下马，朗声道：“里面的可是林公子？家父听风阁沈知行，特命我来接应。”
+
+第八章 沈家小姐
+
+来人名叫沈清欢，是听风阁阁主的独女，生性爽利，擅使一对峨眉刺。
+她接过林砚手中的漕运册看了一眼，神色骤然凝重：“难怪昨晚灰衣人敢在青岚镇动手，盐运司的周判官最近正好调任江南，看来他是怕旧事重提。”
+“周判官如今在何处？”林砚问道。
+“就在姑苏城外的寒山别院，三日后他要办五十大寿，江南半数名流都会赴宴。”
+
+第九章 姑苏烟雨
+
+三日后，姑苏城细雨蒙蒙，画舫沿运河缓缓而行。
+林砚换上一袭素色长衫，与沈清欢扮作前来贺寿的茶商兄妹，顺利混入了寒山别院。
+别院内宾客云集，丝竹声不绝于耳。然而林砚敏锐地注意到，院墙四周的假山后暗藏着不少江湖好手，戒备之森严远超寻常寿宴。
+
+第十章 寿宴风波
+
+酒过三巡，主座上的周判官满面红光，正准备接受众宾客的贺礼。
+沈清欢轻轻碰了碰林砚的手臂，低声道：“时机到了，西厢书房的守卫刚换班，我去引开前院视线，你去拿完整的账本。”
+话音未落，前院忽然响起一阵琴声，紧接着一名白衣乐师失手打翻了酒盏，引得满座宾客纷纷侧目。林砚借机闪身入廊，如狸猫般掠向西厢。
+
+第十一章 密室真相
+
+西厢书房看似寻常，林砚转动书架上的青铜烛台，暗门缓缓开启。
+密室石桌上整齐摆放着三只铁盒，里面不仅有十年前沧州商队的完整清单，还有周判官与北境马贼往来的亲笔密信。
+林砚正欲收起铁盒，身后暗门却突然合拢，周判官阴沉的声音在门外响起：“年轻人，听风阁教你的胆子，倒是比你师父当年还要大上几分。”
+
+第十二章 破雾而出
+
+密室虽窄，林砚却早有准备。他以长剑挑开顶部透气格栅，借力跃出屋脊，正好与赶来接应的沈清欢汇合。
+寒山别院内火把通明，护院们蜂拥而至。两人背靠背立于屋檐之上，沈清欢笑着抛出一枚信号烟花：“放心，姑苏知府的巡查使已经在山脚候着了，今晚这出戏，该落幕了！”
+烟花在雨夜中轰然绽放，照亮了姑苏城外的千里烟波，也终于揭开了尘封十年的真相。`;
+
+    // ===== App State =====
+    const state = {
+      fileName: '',
+      rawBuffer: null,
+      rawText: '',
+      encoding: 'auto',
+      detectedEncoding: 'UTF-8',
+      rulePreset: 'smart',
+      customRegex: RULE_PRESETS.smart.regex,
+      chunkSize: 5000,
+      chapters: [],
+      selectedIds: new Set(),
+      searchQuery: '',
+      onlySelected: false,
+      visibleLimit: 120,
+      previewChapterId: null,
+      separatorMode: 'blank',
+      toastTimer: null
+    };
+
+    // ===== DOM References =====
+    const els = {
+      headerSubtitle: document.getElementById('headerSubtitle'),
+      btnHeaderRule: document.getElementById('btnHeaderRule'),
+      btnHeaderReimport: document.getElementById('btnHeaderReimport'),
+      fileInput: document.getElementById('fileInput'),
+      importView: document.getElementById('importView'),
+      dropZone: document.getElementById('dropZone'),
+      btnPickFile: document.getElementById('btnPickFile'),
+      btnLoadDemo: document.getElementById('btnLoadDemo'),
+      workspaceView: document.getElementById('workspaceView'),
+      fileNameDisplay: document.getElementById('fileNameDisplay'),
+      fileMetaDisplay: document.getElementById('fileMetaDisplay'),
+      encodingSelect: document.getElementById('encodingSelect'),
+      rulePanel: document.getElementById('rulePanel'),
+      btnCloseRule: document.getElementById('btnCloseRule'),
+      rulePresets: document.getElementById('rulePresets'),
+      customRegexBox: document.getElementById('customRegexBox'),
+      regexInput: document.getElementById('regexInput'),
+      btnApplyRule: document.getElementById('btnApplyRule'),
+      fixedChunkBox: document.getElementById('fixedChunkBox'),
+      chunkSizeInput: document.getElementById('chunkSizeInput'),
+      btnApplyChunk: document.getElementById('btnApplyChunk'),
+      searchInput: document.getElementById('searchInput'),
+      btnClearSearch: document.getElementById('btnClearSearch'),
+      rangeStart: document.getElementById('rangeStart'),
+      rangeEnd: document.getElementById('rangeEnd'),
+      btnSelectRange: document.getElementById('btnSelectRange'),
+      btnSelectAll: document.getElementById('btnSelectAll'),
+      btnInvertSelect: document.getElementById('btnInvertSelect'),
+      btnClearSelect: document.getElementById('btnClearSelect'),
+      btnFilterSelected: document.getElementById('btnFilterSelected'),
+      listCountLabel: document.getElementById('listCountLabel'),
+      selectedHintLabel: document.getElementById('selectedHintLabel'),
+      chapterList: document.getElementById('chapterList'),
+      loadMoreWrap: document.getElementById('loadMoreWrap'),
+      btnLoadMore: document.getElementById('btnLoadMore'),
+      emptyListState: document.getElementById('emptyListState'),
+      bottomBar: document.getElementById('bottomBar'),
+      bottomSelectedCount: document.getElementById('bottomSelectedCount'),
+      bottomWordCount: document.getElementById('bottomWordCount'),
+      btnOpenExport: document.getElementById('btnOpenExport'),
+      previewModal: document.getElementById('previewModal'),
+      previewBackdrop: document.getElementById('previewBackdrop'),
+      previewTitle: document.getElementById('previewTitle'),
+      previewMeta: document.getElementById('previewMeta'),
+      previewBody: document.getElementById('previewBody'),
+      btnClosePreview: document.getElementById('btnClosePreview'),
+      btnPrevChapter: document.getElementById('btnPrevChapter'),
+      btnNextChapter: document.getElementById('btnNextChapter'),
+      btnTogglePreviewSelect: document.getElementById('btnTogglePreviewSelect'),
+      previewSelectLabel: document.getElementById('previewSelectLabel'),
+      exportModal: document.getElementById('exportModal'),
+      exportBackdrop: document.getElementById('exportBackdrop'),
+      exportSummaryText: document.getElementById('exportSummaryText'),
+      btnCloseExport: document.getElementById('btnCloseExport'),
+      exportFileName: document.getElementById('exportFileName'),
+      optIncludeToc: document.getElementById('optIncludeToc'),
+      optUtf8Bom: document.getElementById('optUtf8Bom'),
+      btnCopyText: document.getElementById('btnCopyText'),
+      btnConfirmExport: document.getElementById('btnConfirmExport'),
+      toast: document.getElementById('toast'),
+      toastInner: document.getElementById('toastInner')
+    };
+
+    // ===== Utilities =====
+    function showToast(msg) {
+      els.toastInner.textContent = msg;
+      els.toast.classList.add('show');
+      if (state.toastTimer) clearTimeout(state.toastTimer);
+      state.toastTimer = setTimeout(() => {
+        els.toast.classList.remove('show');
+      }, 2200);
+    }
+
+    function formatWords(count) {
+      if (count >= 10000) {
+        return (count / 10000).toFixed(2) + ' 万字';
+      }
+      return count.toLocaleString('zh-CN') + ' 字';
+    }
+
+    function countChars(str) {
+      return str.replace(/\s+/g, '').length;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function decodeBuffer(buffer, encodingMode) {
+      const bytes = new Uint8Array(buffer);
+      if (encodingMode !== 'auto') {
+        try {
+          const text = new TextDecoder(encodingMode).decode(bytes);
+          return { text: text.replace(/^\uFEFF/, ''), detected: encodingMode.toUpperCase() };
+        } catch (e) {
+          const fallback = new TextDecoder('utf-8').decode(bytes);
+          return { text: fallback.replace(/^\uFEFF/, ''), detected: 'UTF-8' };
+        }
+      }
+
+      if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        return { text: new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/, ''), detected: 'UTF-8 BOM' };
+      }
+      if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        return { text: new TextDecoder('utf-16le').decode(bytes).replace(/^\uFEFF/, ''), detected: 'UTF-16LE' };
+      }
+      if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        return { text: new TextDecoder('utf-16be').decode(bytes).replace(/^\uFEFF/, ''), detected: 'UTF-16BE' };
+      }
+
+      try {
+        const utf8Text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        return { text: utf8Text.replace(/^\uFEFF/, ''), detected: 'UTF-8' };
+      } catch (e) {
+        try {
+          const gbkText = new TextDecoder('gb18030').decode(bytes);
+          return { text: gbkText, detected: 'GBK/GB18030' };
+        } catch (err) {
+          return { text: new TextDecoder('utf-8').decode(bytes), detected: 'UTF-8' };
+        }
+      }
+    }
+
+    // ===== Chapter Parsing =====
+    function parseChapters(text) {
+      const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const chapters = [];
+
+      if (state.rulePreset === 'fixed') {
+        const size = Math.max(500, parseInt(state.chunkSize, 10) || 5000);
+        let idx = 1;
+        for (let pos = 0; pos < normalized.length; pos += size) {
+          const slice = normalized.slice(pos, pos + size).trim();
+          if (!slice) continue;
+          const title = `第 ${idx} 段（约 ${formatWords(countChars(slice))}）`;
+          chapters.push({
+            id: idx,
+            index: idx,
+            title,
+            content: slice,
+            wordCount: countChars(slice)
+          });
+          idx++;
+        }
+        return chapters;
+      }
+
+      let regex;
+      try {
+        regex = new RegExp(state.customRegex, 'm');
+      } catch (e) {
+        showToast('正则表达式格式有误，请检查');
+        return state.chapters;
+      }
+
+      const lines = normalized.split('\n');
+      let currentTitle = null;
+      let currentLines = [];
+      let prefaceLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        if (trimmed && trimmed.length <= 70 && regex.test(trimmed)) {
+          if (currentTitle !== null) {
+            const content = currentLines.join('\n').trim();
+            chapters.push({
+              id: chapters.length + 1,
+              index: chapters.length + 1,
+              title: currentTitle,
+              content,
+              wordCount: countChars(content)
+            });
+          } else if (prefaceLines.join('\n').trim().length > 0) {
+            const prefContent = prefaceLines.join('\n').trim();
+            chapters.push({
+              id: chapters.length + 1,
+              index: chapters.length + 1,
+              title: '开头 / 序言内容',
+              content: prefContent,
+              wordCount: countChars(prefContent)
+            });
+          }
+          currentTitle = trimmed;
+          currentLines = [trimmed];
+        } else {
+          if (currentTitle !== null) {
+            currentLines.push(line);
+          } else {
+            prefaceLines.push(line);
+          }
+        }
+      }
+
+      if (currentTitle !== null) {
+        const content = currentLines.join('\n').trim();
+        chapters.push({
+          id: chapters.length + 1,
+          index: chapters.length + 1,
+          title: currentTitle,
+          content,
+          wordCount: countChars(content)
+        });
+      } else if (normalized.trim().length > 0) {
+        const fullContent = normalized.trim();
+        chapters.push({
+          id: 1,
+          index: 1,
+          title: '全文内容（未识别到章节标题）',
+          content: fullContent,
+          wordCount: countChars(fullContent)
+        });
+      }
+
+      return chapters;
+    }
+
+    function loadTextAndParse(fileName, text, detectedEncoding) {
+      state.fileName = fileName;
+      state.rawText = text;
+      state.detectedEncoding = detectedEncoding;
+      state.chapters = parseChapters(text);
+      state.selectedIds = new Set();
+      state.searchQuery = '';
+      state.onlySelected = false;
+      state.visibleLimit = 120;
+
+      els.searchInput.value = '';
+      els.btnClearSearch.classList.add('hidden');
+      els.rangeStart.value = '';
+      els.rangeEnd.value = '';
+      els.rangeStart.max = state.chapters.length;
+      els.rangeEnd.max = state.chapters.length;
+
+      els.importView.classList.add('hidden');
+      els.workspaceView.classList.remove('hidden');
+      els.bottomBar.classList.remove('hidden');
+      els.btnHeaderRule.classList.remove('hidden');
+      els.btnHeaderReimport.classList.remove('hidden');
+
+      renderAll();
+      if (state.chapters.length === 1 && state.chapters[0].title.includes('未识别')) {
+        showToast('未匹配到默认章节标题，可点右上角「规则」调整');
+      } else {
+        showToast(`已识别 ${state.chapters.length} 个章节`);
+      }
+    }
+
+    // ===== Filtering & Rendering =====
+    function getFilteredChapters() {
+      const q = state.searchQuery.trim().toLowerCase();
+      return state.chapters.filter((ch) => {
+        if (state.onlySelected && !state.selectedIds.has(ch.id)) return false;
+        if (!q) return true;
+        return (
+          ch.title.toLowerCase().includes(q) ||
+          String(ch.index).includes(q)
+        );
+      });
+    }
+
+    function renderMeta() {
+      const totalWords = state.chapters.reduce((sum, c) => sum + c.wordCount, 0);
+      els.fileNameDisplay.textContent = state.fileName;
+      els.fileMetaDisplay.textContent = `共 ${state.chapters.length} 章 · ${formatWords(totalWords)} · ${state.detectedEncoding}`;
+      els.headerSubtitle.textContent = `${state.chapters.length} 个目录章节（纯离线模式）`;
+    }
+
+    function renderRulePresets() {
+      const buttons = els.rulePresets.querySelectorAll('.rule-preset-btn');
+      buttons.forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.preset === state.rulePreset);
+      });
+      if (state.rulePreset === 'fixed') {
+        els.customRegexBox.classList.add('hidden');
+        els.fixedChunkBox.classList.remove('hidden');
+      } else {
+        els.customRegexBox.classList.remove('hidden');
+        els.fixedChunkBox.classList.add('hidden');
+      }
+      els.regexInput.value = state.customRegex;
+      els.chunkSizeInput.value = state.chunkSize;
+    }
+
+    function renderFilterToggle() {
+      els.btnFilterSelected.classList.toggle('active', state.onlySelected);
+    }
+
+    function renderBottomBar() {
+      let selectedCount = 0;
+      let selectedWords = 0;
+      for (const ch of state.chapters) {
+        if (state.selectedIds.has(ch.id)) {
+          selectedCount++;
+          selectedWords += ch.wordCount;
+        }
+      }
+      els.selectedHintLabel.textContent = `已选 ${selectedCount} 章`;
+      els.bottomSelectedCount.textContent = `已选 ${selectedCount} 章`;
+      els.bottomWordCount.textContent = selectedCount > 0 ? `预计导出 ${formatWords(selectedWords)}` : '请点击上方章节进行选择';
+      els.btnOpenExport.disabled = selectedCount === 0;
+    }
+
+    function renderChapterList() {
+      const filtered = getFilteredChapters();
+      els.listCountLabel.textContent = state.searchQuery || state.onlySelected
+        ? `筛选结果 ${filtered.length} / ${state.chapters.length} 章`
+        : `全部目录（共 ${state.chapters.length} 章）`;
+
+      if (filtered.length === 0) {
+        els.chapterList.innerHTML = '';
+        els.emptyListState.classList.remove('hidden');
+        els.loadMoreWrap.classList.add('hidden');
+        return;
+      }
+
+      els.emptyListState.classList.add('hidden');
+      const slice = filtered.slice(0, state.visibleLimit);
+
+      els.chapterList.innerHTML = slice.map((ch) => {
+        const checked = state.selectedIds.has(ch.id);
+        return `
+          <div data-id="${ch.id}" class="chapter-item ${checked ? 'selected' : ''}">
+            <div class="checkbox-box" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="chapter-info">
+              <p class="chapter-title">${escapeHtml(ch.title)}</p>
+              <p class="chapter-sub">#${ch.index} · ${formatWords(ch.wordCount)}</p>
+            </div>
+            <button type="button" data-preview-id="${ch.id}" class="preview-btn">预览</button>
+          </div>
+        `;
+      }).join('');
+
+      if (filtered.length > state.visibleLimit) {
+        els.loadMoreWrap.classList.remove('hidden');
+        els.btnLoadMore.textContent = `加载更多（还有 ${filtered.length - state.visibleLimit} 章）`;
+      } else {
+        els.loadMoreWrap.classList.add('hidden');
+      }
+    }
+
+    function renderAll() {
+      renderMeta();
+      renderRulePresets();
+      renderFilterToggle();
+      renderChapterList();
+      renderBottomBar();
+    }
+
+    // ===== Preview Modal =====
+    function openPreview(chapterId) {
+      const ch = state.chapters.find((c) => c.id === chapterId);
+      if (!ch) return;
+      state.previewChapterId = ch.id;
+      els.previewTitle.textContent = ch.title;
+      els.previewMeta.textContent = `第 ${ch.index} 项 · ${formatWords(ch.wordCount)}`;
+      els.previewBody.textContent = ch.content;
+      els.previewBody.scrollTop = 0;
+
+      const idx = state.chapters.findIndex((c) => c.id === ch.id);
+      els.btnPrevChapter.disabled = idx <= 0;
+      els.btnNextChapter.disabled = idx >= state.chapters.length - 1;
+
+      updatePreviewSelectBtn();
+      els.previewModal.classList.remove('hidden');
+    }
+
+    function updatePreviewSelectBtn() {
+      const isSelected = state.selectedIds.has(state.previewChapterId);
+      els.previewSelectLabel.textContent = isSelected ? '已选中（点击取消）' : '选中本章';
+      els.btnTogglePreviewSelect.classList.toggle('is-selected', isSelected);
+    }
+
+    function closePreview() {
+      els.previewModal.classList.add('hidden');
+    }
+
+    // ===== Export Modal & Generation =====
+    function buildExportText() {
+      const selected = state.chapters.filter((ch) => state.selectedIds.has(ch.id));
+      const parts = [];
+
+      if (els.optIncludeToc.checked) {
+        const tocHeader = [
+          `【目录清单 · 共 ${selected.length} 章】`,
+          ...selected.map((ch, idx) => `${idx + 1}. ${ch.title}`),
+          '========================================'
+        ].join('\n');
+        parts.push(tocHeader);
+      }
+
+      const sepMap = {
+        blank: '\n\n\n',
+        line: '\n\n----------------------------------------\n\n',
+        compact: '\n\n'
+      };
+      const sep = sepMap[state.separatorMode] || '\n\n\n';
+      const body = selected.map((ch) => ch.content).join(sep);
+      parts.push(body);
+      return parts.join('\n\n');
+    }
+
+    function suggestExportFileName() {
+      const base = state.fileName.replace(/\.txt$/i, '') || '裁剪文档';
+      const selected = state.chapters.filter((ch) => state.selectedIds.has(ch.id));
+      if (selected.length === 1) {
+        const cleanTitle = selected[0].title.replace(/[\\/:*?"<>|]/g, '').slice(0, 20);
+        return `${base}_${cleanTitle}`;
+      }
+      const firstIdx = selected[0]?.index || 1;
+      const lastIdx = selected[selected.length - 1]?.index || selected.length;
+      const isContiguous = lastIdx - firstIdx + 1 === selected.length;
+      return isContiguous
+        ? `${base}_第${firstIdx}-${lastIdx}章`
+        : `${base}_精选${selected.length}章`;
+    }
+
+    function renderSepButtons() {
+      document.querySelectorAll('.sep-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.sep === state.separatorMode);
+      });
+    }
+
+    function openExportModal() {
+      const selected = state.chapters.filter((ch) => state.selectedIds.has(ch.id));
+      if (selected.length === 0) return;
+      const words = selected.reduce((sum, c) => sum + c.wordCount, 0);
+      els.exportSummaryText.textContent = `已选 ${selected.length} 章 · 共 ${formatWords(words)}`;
+      els.exportFileName.value = suggestExportFileName();
+      renderSepButtons();
+      els.exportModal.classList.remove('hidden');
+    }
+
+    function closeExportModal() {
+      els.exportModal.classList.add('hidden');
+    }
+
+    function triggerDownloadTxt() {
+      const content = buildExportText();
+      const safeName = (els.exportFileName.value.trim() || '裁剪章节').replace(/[\\/:*?"<>|]/g, '_');
+      const finalName = safeName.toLowerCase().endsWith('.txt') ? safeName : `${safeName}.txt`;
+      const payload = els.optUtf8Bom.checked ? ['\uFEFF', content] : [content];
+      const blob = new Blob(payload, { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = finalName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      closeExportModal();
+      showToast(`已导出 ${finalName}`);
+    }
+
+    async function copySelectedText() {
+      const content = buildExportText();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(content);
+        } else {
+          throw new Error('Clipboard API unavailable');
+        }
+        showToast('已复制选中章节文本');
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('已复制选中章节文本');
+        } catch (err) {
+          showToast('复制失败，请使用下载 TXT 功能');
+        }
+        document.body.removeChild(ta);
+      }
+    }
+
+    // ===== File Reading =====
+    function handleFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.rawBuffer = e.target.result;
+        const { text, detected } = decodeBuffer(state.rawBuffer, state.encoding);
+        loadTextAndParse(file.name, text, detected);
+      };
+      reader.onerror = () => {
+        showToast('读取文件失败，请重试');
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ===== Event Bindings =====
+    els.btnPickFile.addEventListener('click', (e) => {
+      e.stopPropagation();
+      els.fileInput.click();
+    });
+
+    els.dropZone.addEventListener('click', () => {
+      els.fileInput.click();
+    });
+
+    els.dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      els.dropZone.classList.add('drag-active');
+    });
+
+    els.dropZone.addEventListener('dragleave', () => {
+      els.dropZone.classList.remove('drag-active');
+    });
+
+    els.dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      els.dropZone.classList.remove('drag-active');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    // Global drag-and-drop on desktop even after a file is loaded
+    document.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    document.addEventListener('drop', (e) => {
+      if (e.target.closest('#dropZone')) return;
+      e.preventDefault();
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && (/\.txt$/i.test(file.name) || file.type === 'text/plain')) {
+        handleFile(file);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (!els.previewModal.classList.contains('hidden')) closePreview();
+        if (!els.exportModal.classList.contains('hidden')) closeExportModal();
+      }
+    });
+
+    els.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) handleFile(file);
+      els.fileInput.value = '';
+    });
+
+    els.btnHeaderReimport.addEventListener('click', () => {
+      els.fileInput.click();
+    });
+
+    els.btnLoadDemo.addEventListener('click', () => {
+      state.rawBuffer = null;
+      state.encoding = 'auto';
+      els.encodingSelect.value = 'auto';
+      loadTextAndParse('青岚听风录（示例）.txt', DEMO_TEXT, 'UTF-8');
+    });
+
+    els.encodingSelect.addEventListener('change', (e) => {
+      state.encoding = e.target.value;
+      if (state.rawBuffer) {
+        const { text, detected } = decodeBuffer(state.rawBuffer, state.encoding);
+        loadTextAndParse(state.fileName, text, detected);
+      } else {
+        showToast('示例文本为内置 UTF-8 编码');
+      }
+    });
+
+    els.btnHeaderRule.addEventListener('click', () => {
+      els.rulePanel.classList.toggle('hidden');
+    });
+
+    els.btnCloseRule.addEventListener('click', () => {
+      els.rulePanel.classList.add('hidden');
+    });
+
+    els.rulePresets.addEventListener('click', (e) => {
+      const btn = e.target.closest('.rule-preset-btn');
+      if (!btn) return;
+      const preset = btn.dataset.preset;
+      state.rulePreset = preset;
+      if (preset !== 'fixed') {
+        state.customRegex = RULE_PRESETS[preset].regex;
+      }
+      renderRulePresets();
+      state.chapters = parseChapters(state.rawText);
+      state.selectedIds = new Set();
+      state.visibleLimit = 120;
+      renderAll();
+      showToast(`已切换为「${RULE_PRESETS[preset].label}」，共 ${state.chapters.length} 章`);
+    });
+
+    els.btnApplyRule.addEventListener('click', () => {
+      const val = els.regexInput.value.trim();
+      if (!val) {
+        showToast('请输入有效的正则表达式');
+        return;
+      }
+      state.customRegex = val;
+      state.chapters = parseChapters(state.rawText);
+      state.selectedIds = new Set();
+      state.visibleLimit = 120;
+      renderAll();
+      showToast(`已重新识别，共 ${state.chapters.length} 章`);
+    });
+
+    els.btnApplyChunk.addEventListener('click', () => {
+      const val = parseInt(els.chunkSizeInput.value, 10);
+      if (!val || val < 500) {
+        showToast('每段字数建议不少于 500 字');
+        return;
+      }
+      state.chunkSize = val;
+      state.chapters = parseChapters(state.rawText);
+      state.selectedIds = new Set();
+      state.visibleLimit = 120;
+      renderAll();
+      showToast(`已按每段 ${val} 字切分为 ${state.chapters.length} 段`);
+    });
+
+    els.searchInput.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      state.visibleLimit = 120;
+      els.btnClearSearch.classList.toggle('hidden', !state.searchQuery);
+      renderChapterList();
+    });
+
+    els.btnClearSearch.addEventListener('click', () => {
+      state.searchQuery = '';
+      els.searchInput.value = '';
+      els.btnClearSearch.classList.add('hidden');
+      renderChapterList();
+    });
+
+    els.btnSelectRange.addEventListener('click', () => {
+      const total = state.chapters.length;
+      if (total === 0) return;
+      let start = parseInt(els.rangeStart.value, 10);
+      let end = parseInt(els.rangeEnd.value, 10);
+      if (isNaN(start) && isNaN(end)) {
+        showToast('请输入起始和结束序号，例如 1 至 5');
+        return;
+      }
+      if (isNaN(start)) start = 1;
+      if (isNaN(end)) end = total;
+      if (start > end) [start, end] = [end, start];
+      start = Math.max(1, Math.min(total, start));
+      end = Math.max(1, Math.min(total, end));
+
+      let added = 0;
+      for (const ch of state.chapters) {
+        if (ch.index >= start && ch.index <= end) {
+          state.selectedIds.add(ch.id);
+          added++;
+        }
+      }
+      renderChapterList();
+      renderBottomBar();
+      showToast(`已选中第 ${start} 至 ${end} 章（共 ${added} 章）`);
+    });
+
+    els.btnSelectAll.addEventListener('click', () => {
+      const target = getFilteredChapters();
+      target.forEach((ch) => state.selectedIds.add(ch.id));
+      renderChapterList();
+      renderBottomBar();
+      showToast(`已全选当前列表 ${target.length} 章`);
+    });
+
+    els.btnInvertSelect.addEventListener('click', () => {
+      const target = getFilteredChapters();
+      target.forEach((ch) => {
+        if (state.selectedIds.has(ch.id)) state.selectedIds.delete(ch.id);
+        else state.selectedIds.add(ch.id);
+      });
+      renderChapterList();
+      renderBottomBar();
+      showToast('已反选当前列表');
+    });
+
+    els.btnClearSelect.addEventListener('click', () => {
+      state.selectedIds.clear();
+      if (state.onlySelected) {
+        state.onlySelected = false;
+        renderFilterToggle();
+      }
+      renderChapterList();
+      renderBottomBar();
+      showToast('已清空选择');
+    });
+
+    els.btnFilterSelected.addEventListener('click', () => {
+      state.onlySelected = !state.onlySelected;
+      state.visibleLimit = 120;
+      renderFilterToggle();
+      renderChapterList();
+    });
+
+    els.chapterList.addEventListener('click', (e) => {
+      const previewBtn = e.target.closest('.preview-btn');
+      if (previewBtn) {
+        e.stopPropagation();
+        openPreview(Number(previewBtn.dataset.previewId));
+        return;
+      }
+      const card = e.target.closest('.chapter-item');
+      if (!card) return;
+      const id = Number(card.dataset.id);
+      if (state.selectedIds.has(id)) state.selectedIds.delete(id);
+      else state.selectedIds.add(id);
+      renderChapterList();
+      renderBottomBar();
+    });
+
+    els.btnLoadMore.addEventListener('click', () => {
+      state.visibleLimit += 150;
+      renderChapterList();
+    });
+
+    els.btnClosePreview.addEventListener('click', closePreview);
+    els.previewBackdrop.addEventListener('click', closePreview);
+
+    els.btnPrevChapter.addEventListener('click', () => {
+      const idx = state.chapters.findIndex((c) => c.id === state.previewChapterId);
+      if (idx > 0) openPreview(state.chapters[idx - 1].id);
+    });
+
+    els.btnNextChapter.addEventListener('click', () => {
+      const idx = state.chapters.findIndex((c) => c.id === state.previewChapterId);
+      if (idx >= 0 && idx < state.chapters.length - 1) openPreview(state.chapters[idx + 1].id);
+    });
+
+    els.btnTogglePreviewSelect.addEventListener('click', () => {
+      if (state.previewChapterId == null) return;
+      if (state.selectedIds.has(state.previewChapterId)) {
+        state.selectedIds.delete(state.previewChapterId);
+      } else {
+        state.selectedIds.add(state.previewChapterId);
+      }
+      updatePreviewSelectBtn();
+      renderChapterList();
+      renderBottomBar();
+    });
+
+    els.btnOpenExport.addEventListener('click', openExportModal);
+    els.btnCloseExport.addEventListener('click', closeExportModal);
+    els.exportBackdrop.addEventListener('click', closeExportModal);
+
+    document.querySelectorAll('.sep-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.separatorMode = btn.dataset.sep;
+        renderSepButtons();
+      });
+    });
+
+    els.btnConfirmExport.addEventListener('click', triggerDownloadTxt);
+    els.btnCopyText.addEventListener('click', copySelectedText);
+  </script>
+</body>
+</html>
